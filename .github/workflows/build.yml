@@ -1,0 +1,32 @@
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  mac:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: get juce
+        run: git clone --depth 1 https://github.com/juce-framework/JUCE.git juce
+
+      - name: configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+
+      - name: build
+        run: cmake --build build --config Release --parallel 3
+
+      - name: package
+        run: |
+          mkdir -p dist
+          cp -R "build/niebla_artefacts/Release/VST3/NIEBLA.vst3" dist/
+          cp -R "build/niebla_artefacts/Release/AU/NIEBLA.component" dist/
+          cd dist && zip -r ../niebla-mac.zip .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: niebla-mac
+          path: niebla-mac.zip
